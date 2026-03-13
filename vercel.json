@@ -4,6 +4,11 @@
       "source": "/",
       "destination": "https://rifas-terreiro-cura.base44.app",
       "permanent": true
+    },
+    {
+      "source": "/pascoa",
+      "destination": "https://cura-sorte-fiel.base44.app/rifa/rifa-de-pascoa-1773411937976",
+      "permanent": true
     }
   ]
 }
