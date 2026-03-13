@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "https://rifas-terreiro-cura.base44.app",
+      "permanent": true
+    }
+  ]
+}
