@@ -1,0 +1,111 @@
+name: Import Base44 ZIP
+
+on:
+  workflow_dispatch:
+    inputs:
+      zip_url:
+        description: 'Public URL to the ZIP file to import (must be reachable by the runner)'
+        required: true
+        type: string
+      mirror:
+        description: 'If true, delete repo files that are not present in the ZIP (mirror mode)'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    name: Import ZIP to repository (creates backup branch)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "actions@github.com"
+
+      - name: Create backup branch from origin/main
+        run: |
+          set -e
+          ts=$(date -u +%Y%m%dT%H%M%SZ)
+          git fetch origin main
+          git checkout -B "backup/import-base44-${ts}" origin/main
+          git push -u origin "backup/import-base44-${ts}"
+
+      - name: Restore/checkout main
+        run: |
+          git checkout main
+          git reset --hard origin/main
+
+      - name: Download ZIP (supports Google Drive links)
+        run: |
+          set -e
+          mkdir -p /tmp/base44_import
+          FILE="/tmp/base44_import/base44.zip"
+          URL="${{ inputs.zip_url }}"
+          echo "Downloading: $URL"
+
+          if echo "$URL" | grep -q "drive.google.com"; then
+            echo "Detected Google Drive URL, using Drive download helper..."
+            # try extract file id from /d/FILEID or id=FILEID
+            FILEID=$(echo "$URL" | sed -n 's#.*?/d/\([^/]*\).*#\1#p')
+            if [ -z "$FILEID" ]; then
+              FILEID=$(echo "$URL" | sed -n 's#.*id=\([^&]*\).*#\1#p')
+            fi
+            if [ -z "$FILEID" ]; then
+              echo "Could not extract file id from Google Drive URL. Falling back to curl on the given URL."
+              curl -fsSL "$URL" -o "$FILE"
+            else
+              # attempt first request to get confirm token
+              TMPHTML="/tmp/gd_page.html"
+              wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate "https://docs.google.com/uc?export=download&id=${FILEID}" -O "${TMPHTML}"
+              CONFIRM=$(sed -n 's/.*confirm=\([0-9A-Za-z_]\+\).*/\1/p' "${TMPHTML}" | head -n 1 || true)
+              if [ -n "$CONFIRM" ]; then
+                wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=${CONFIRM}&id=${FILEID}" -O "$FILE"
+              else
+                # If no confirm token, try direct fetch
+                wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&id=${FILEID}" -O "$FILE"
+              fi
+            fi
+          else
+            curl -fsSL "$URL" -o "$FILE"
+          fi
+
+      - name: Extract ZIP
+        run: |
+          unzip -oq /tmp/base44_import/base44.zip -d /tmp/base44_import/extracted
+
+      - name: Sync files into repo
+        run: |
+          set -e
+          echo "Mirror mode: ${{ inputs.mirror }}"
+          if [ "${{ inputs.mirror }}" = "true" ]; then
+            rsync -a --delete --exclude='.git' /tmp/base44_import/extracted/ ./
+          else
+            rsync -a --exclude='.git' /tmp/base44_import/extracted/ ./
+          fi
+
+      - name: Commit & push changes if any
+        run: |
+          set -e
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit. Exiting."
+            exit 0
+          fi
+          git commit -m "Import: add/update files from base44 export"
+          git push origin main
+
+      - name: Done
+        run: |
+          echo "Import completed. A backup branch was created from origin/main named backup/import-base44-<timestamp>."
