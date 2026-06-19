@@ -1,48 +1,30 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/lib/AuthContext';
 import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
-
-const ADMIN_EMAIL = 'curaterreiro@gmail.com';
-const ADMIN_PASSWORD = 'Curaterreiro777!';
-const SESSION_KEY = 'cura_admin_auth';
-
-export function isAdminAuthenticated() {
-  return localStorage.getItem(SESSION_KEY) === 'true';
-}
-
-export function adminLogin(email, password) {
-  if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-    localStorage.setItem(SESSION_KEY, 'true');
-    return true;
-  }
-  return false;
-}
-
-export function adminLogout() {
-  localStorage.removeItem(SESSION_KEY);
-}
 
 export default function AdminLogin() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    setTimeout(() => {
-      const ok = adminLogin(email.trim(), password);
-      if (ok) {
-        navigate('/admin', { replace: true });
-      } else {
-        setError('E-mail ou senha incorretos.');
-      }
+    
+    try {
+      await login(email.trim(), password);
+      navigate('/admin', { replace: true });
+    } catch (err) {
+      setError(err.message || 'E-mail ou senha incorretos.');
+    } finally {
       setLoading(false);
-    }, 400);
+    }
   };
 
   return (
