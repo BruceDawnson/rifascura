@@ -1,0 +1,83 @@
+{
+  "name": "Rifa",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome da rifa"
+    },
+    "slug": {
+      "type": "string",
+      "description": "Slug \u00fanico para URL p\u00fablica"
+    },
+    "descricao": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o da rifa"
+    },
+    "quantidade_numeros": {
+      "type": "number",
+      "description": "Quantidade total de n\u00fameros"
+    },
+    "valor_numero": {
+      "type": "number",
+      "description": "Valor por n\u00famero em reais"
+    },
+    "vendedor_responsavel": {
+      "type": "string",
+      "description": "Vendedor respons\u00e1vel pela rifa"
+    },
+    "data_inicio": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de in\u00edcio"
+    },
+    "data_fim": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de encerramento"
+    },
+    "imagem_url": {
+      "type": "string",
+      "description": "URL da imagem da rifa"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ativa",
+        "encerrada",
+        "finalizada"
+      ],
+      "default": "ativa",
+      "description": "Status da rifa"
+    },
+    "numero_vencedor": {
+      "type": "number",
+      "description": "N\u00famero vencedor do sorteio"
+    },
+    "metodo_sorteio": {
+      "type": "string",
+      "description": "M\u00e9todo do sorteio"
+    },
+    "data_sorteio": {
+      "type": "string",
+      "description": "Data do sorteio realizado"
+    },
+    "nome_vencedor": {
+      "type": "string",
+      "description": "Nome do vencedor"
+    },
+    "telefone_vencedor": {
+      "type": "string",
+      "description": "Telefone do vencedor"
+    },
+    "observacao_sorteio": {
+      "type": "string",
+      "description": "Observa\u00e7\u00e3o do sorteio"
+    }
+  },
+  "required": [
+    "nome",
+    "quantidade_numeros",
+    "valor_numero"
+  ]
+}
